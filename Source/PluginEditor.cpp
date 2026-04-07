@@ -1,19 +1,121 @@
 #include "PluginEditor.h"
-#include "BinaryData.h"
+
+namespace Layout {
+    constexpr int kWidth    = 700;
+    constexpr int kHeight   = 420;
+    constexpr int kKnobSize = 230;
+    constexpr int kBuckX    = 38;
+    constexpr int kBuckY    = 80;
+    constexpr int kGritX    = 432;
+    constexpr int kGritY    = 80;
+    constexpr int kNLW      = 120;
+    constexpr int kNLH      = 24;
+    constexpr int kNLYOff   = -28;
+    constexpr int kVLW      = 120;
+    constexpr int kVLH      = 22;
+    constexpr int kVLYOff   = 8;
+}
 
 CallOutAudioProcessorEditor::CallOutAudioProcessorEditor(CallOutAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
-    backgroundImage = juce::ImageCache::getFromMemory(
-        BinaryData::background_png, BinaryData::background_pngSize);
+    {
+        int sz = 0;
+        const char* d = BinaryData::getNamedResource("background_png", sz);
+        if (d && sz > 0)
+            backgroundImage = juce::ImageCache::getFromMemory(d, sz);
+    }
 
-    int w = backgroundImage.getWidth();
-    int h = backgroundImage.getHeight();
-    if (w > 1200) { h = h * 1200 / w; w = 1200; }
-    setSize(w > 0 ? w : 1093, h > 0 ? h : 612);
+    const juce::Font bf(juce::FontOptions().withHeight(14.0f).withStyle("Bold"));
+    const juce::Font nf(juce::FontOptions().withHeight(13.0f));
+    const juce::Colour org(0xFFFF9900), dim(0xFFCC7700);
+
+    buckKnob.setLookAndFeel(&knobLAF);
+    gritKnob.setLookAndFeel(&knobLAF);
+
+    auto sk = [&](juce::Slider& k) {
+        k.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+        k.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+        k.setRange(0.0, 1.0, 0.001);
+        k.setValue(0.5, juce::dontSendNotification);
+        k.setRotaryParameters(juce::MathConstants<float>::pi * 1.25f,
+                              juce::MathConstants<float>::pi * 2.75f, true);
+        addAndMakeVisible(k);
+    };
+    sk(buckKnob);
+    sk(gritKnob);
+
+    auto snl = [&](juce::Label& l, const juce::String& t) {
+        l.setText(t, juce::dontSendNotification);
+        l.setFont(bf);
+        l.setColour(juce::Label::textColourId, org);
+        l.setJustificationType(juce::Justification::centred);
+        l.setInterceptsMouseClicks(false, false);
+        addAndMakeVisible(l);
+    };
+    snl(buckNameLabel, "BUCK");
+    snl(gritNameLabel, "GRIT");
+
+    auto svl = [&](juce::Label& l) {
+        l.setFont(nf);
+        l.setColour(juce::Label::textColourId, dim);
+        l.setJustificationType(juce::Justification::centred);
+        l.setInterceptsMouseClicks(false, false);
+        addAndMakeVisible(l);
+    };
+    svl(buckValueLabel);
+    svl(gritValueLabel);
+
+    buckAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.apvts, "buck", buckKnob);
+    gritAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.apvts, "grit", gritKnob);
+
+    setSize(Layout::kWidth, Layout::kHeight);
+    updateValueLabels();
+    startTimerHz(10);
+}
+
+CallOutAudioProcessorEditor::~CallOutAudioProcessorEditor()
+{
+    buckKnob.setLookAndFeel(nullptr);
+    gritKnob.setLookAndFeel(nullptr);
+    stopTimer();
 }
 
 void CallOutAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    g.drawImage(backgroundImage, getLocalBounds().toFloat());
+    g.fillAll(juce::Colour(0xFF1A1A1A));
+    if (backgroundImage.isValid())
+        g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(),
+                    0, 0, backgroundImage.getWidth(), backgroundImage.getHeight(), false);
+}
+
+void CallOutAudioProcessorEditor::resized()
+{
+    using namespace Layout;
+    buckKnob.setBounds(kBuckX, kBuckY, kKnobSize, kKnobSize);
+    gritKnob.setBounds(kGritX, kGritY, kKnobSize, kKnobSize);
+
+    const int bCX = kBuckX + kKnobSize / 2;
+    const int gCX = kGritX + kKnobSize / 2;
+
+    buckNameLabel .setBounds(bCX - kNLW/2, kBuckY + kNLYOff,           kNLW, kNLH);
+    gritNameLabel .setBounds(gCX - kNLW/2, kGritY + kNLYOff,           kNLW, kNLH);
+    buckValueLabel.setBounds(bCX - kVLW/2, kBuckY + kKnobSize + kVLYOff, kVLW, kVLH);
+    gritValueLabel.setBounds(gCX - kVLW/2, kGritY + kKnobSize + kVLYOff, kVLW, kVLH);
+}
+
+void CallOutAudioProcessorEditor::timerCallback()
+{
+    updateValueLabels();
+}
+
+void CallOutAudioProcessorEditor::updateValueLabels()
+{
+    auto fmt = [](const juce::Slider& s) {
+        return "~" + juce::String(juce::roundToInt(s.getValue() * 100.0)) + "%";
+    };
+    buckValueLabel.setText(fmt(buckKnob), juce::dontSendNotification);
+    gritValueLabel.setText(fmt(gritKnob), juce::dontSendNotification);
 }

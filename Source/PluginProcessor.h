@@ -26,11 +26,15 @@ public:
     const juce::String getProgramName(int) override { return {}; }
     void changeProgramName(int, const juce::String&) override {}
 
-    void getStateInformation(juce::MemoryBlock&) override {}
-    void setStateInformation(const void*, int) override {}
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
 
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
+    juce::AudioProcessorValueTreeState apvts;
+
 private:
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CallOutAudioProcessor)
 };

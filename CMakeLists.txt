@@ -20,6 +20,7 @@ juce_add_plugin(CallOut
 juce_add_binary_data(CallOutBinaryData
     SOURCES
         Resources/background.png
+        Resources/knob.png
 )
 
 juce_generate_juce_header(CallOut)
