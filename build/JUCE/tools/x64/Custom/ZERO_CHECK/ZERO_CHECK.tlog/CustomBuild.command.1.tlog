@@ -1,0 +1,10 @@
+^C:\USERS\USER\ONEDRIVE\DESKTOP\開発\CALLOUT\BUILD\JUCE\TOOLS\CMAKEFILES\1D77C1842536D17883AE6802F32DC5A4\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/user/OneDrive/Desktop/開発/ShoutBuck/JUCE -BC:/Users/user/OneDrive/Desktop/開発/CallOut/build/JUCE/tools --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/user/OneDrive/Desktop/開発/CallOut/build/JUCE/tools/JUCE.slnx
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

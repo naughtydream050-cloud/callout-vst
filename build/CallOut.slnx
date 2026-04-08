@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Solution>
+	<Configurations>
+		<BuildType Name="Debug"/>
+		<BuildType Name="Release"/>
+		<BuildType Name="MinSizeRel"/>
+		<BuildType Name="RelWithDebInfo"/>
+		<Platform Name="x64"/>
+	</Configurations>
+	<Project Path="CallOutBinaryData.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="595b732e-298d-30fc-a237-58b7f4cb2519">
+		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+	</Project>
+	<Project Path="CallOut_rc_lib.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="4e69a925-f9bb-3d74-8733-c3179dda3153">
+		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+	</Project>
+	<Project Path="CallOut_vst3_helper.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="85adec96-9ce0-3e87-a5aa-f2bb0282efd6">
+		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+	</Project>
+	<Folder Name="/CMakePredefinedTargets/">
+		<Project Path="ALL_BUILD.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="869ada2f-6ef5-36cd-a7fe-ed6d4851a78c" DefaultStartup="true">
+			<BuildDependency Project="CallOut.vcxproj"/>
+			<BuildDependency Project="CallOutBinaryData.vcxproj"/>
+			<BuildDependency Project="CallOut_VST3.vcxproj"/>
+			<BuildDependency Project="CallOut_rc_lib.vcxproj"/>
+			<BuildDependency Project="CallOut_vst3_helper.vcxproj"/>
+			<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+		</Project>
+		<Project Path="INSTALL.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="548efa73-11dd-31ff-b158-7237d5c55e80">
+			<BuildDependency Project="ALL_BUILD.vcxproj"/>
+			<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+			<Build Solution="Debug|*" Project="false"/>
+			<Build Solution="Release|*" Project="false"/>
+			<Build Solution="MinSizeRel|*" Project="false"/>
+			<Build Solution="RelWithDebInfo|*" Project="false"/>
+		</Project>
+		<Project Path="ZERO_CHECK.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="f2a718e5-22af-3758-be19-174adb1eadaf"/>
+	</Folder>
+	<Folder Name="/CallOut/">
+		<Project Path="CallOut.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="abb0649d-fdda-302c-88a0-2724cf98d443">
+			<BuildDependency Project="CallOutBinaryData.vcxproj"/>
+			<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+		</Project>
+		<Project Path="CallOut_All.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="8f10a12f-3458-3ffc-9509-4dbdb1f1987d">
+			<BuildDependency Project="CallOut_VST3.vcxproj"/>
+			<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+			<Build Solution="Debug|*" Project="false"/>
+			<Build Solution="Release|*" Project="false"/>
+			<Build Solution="MinSizeRel|*" Project="false"/>
+			<Build Solution="RelWithDebInfo|*" Project="false"/>
+		</Project>
+		<Project Path="CallOut_VST3.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="d595dd2f-c9d1-3121-81b5-6216dc268c94">
+			<BuildDependency Project="CallOut.vcxproj"/>
+			<BuildDependency Project="CallOutBinaryData.vcxproj"/>
+			<BuildDependency Project="CallOut_rc_lib.vcxproj"/>
+			<BuildDependency Project="CallOut_vst3_helper.vcxproj"/>
+			<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+		</Project>
+	</Folder>
+</Solution>

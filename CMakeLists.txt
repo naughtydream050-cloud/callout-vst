@@ -31,6 +31,8 @@ target_sources(CallOut
         Source/PluginProcessor.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
+        Source/KnobLookAndFeel.cpp
+        Source/KnobLookAndFeel.h
 )
 
 target_compile_definitions(CallOut
