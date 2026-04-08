@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(CallOut VERSION 1.0.0)
 
-add_subdirectory("C:/Users/user/OneDrive/Desktop/開発/ShoutBuck/JUCE" JUCE)
+add_subdirectory("C:/JUCE" JUCE)
 
 juce_add_plugin(CallOut
     COMPANY_NAME                "Naughty"
@@ -31,7 +31,11 @@ target_sources(CallOut
         Source/PluginProcessor.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
+        Source/KnobLookAndFeel.cpp
+        Source/KnobLookAndFeel.h
 )
+
+target_compile_options(CallOut PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
 
 target_compile_definitions(CallOut
     PUBLIC
