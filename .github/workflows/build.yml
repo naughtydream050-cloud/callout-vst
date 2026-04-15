@@ -1,0 +1,64 @@
+name: Build CALLOUT VST3
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Windows x64 VST3
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache JUCE source
+        uses: actions/cache@v4
+        id: juce-cache
+        with:
+          path: build/_deps
+          key: juce-7.0.12-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            juce-7.0.12-${{ runner.os }}-
+
+      - name: Configure CMake
+        run: cmake -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Find VST3 bundle
+        id: find-vst3
+        run: |
+          $vst3 = Get-ChildItem -Recurse -Filter "*.vst3" build | Select-Object -First 1
+          if (-not $vst3) { Write-Error "VST3 not found"; exit 1 }
+          Write-Host "Found: $($vst3.FullName)"
+          echo "VST3_PATH=$($vst3.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Upload VST3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CALLOUT-VST3-Windows
+          path: ${{ steps.find-vst3.outputs.VST3_PATH }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write job summary
+        if: success()
+        run: |
+          echo "## CALLOUT VST3 Build" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $env:GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $env:GITHUB_STEP_SUMMARY
+          echo "| Platform | Windows x64 |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| JUCE | 7.0.12 (FetchContent) |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| Artifact | CALLOUT-VST3-Windows (30 days) |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| Download | Actions tab of this run" >> $env:GITHUB_STEP_SUMMARY

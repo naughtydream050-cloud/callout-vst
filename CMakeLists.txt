@@ -1,7 +1,37 @@
 cmake_minimum_required(VERSION 3.22)
 project(CallOut VERSION 1.0.0)
 
-add_subdirectory("C:/Users/user/OneDrive/Desktop/開発/ShoutBuck/JUCE" JUCE)
+# ── JUCE path resolution ──────────────────────────────────────────────────────
+# Priority:
+#   1. JUCE_PATH cmake variable  (-DJUCE_PATH=... on command line)
+#   2. Well-known local install locations (developer machines)
+#   3. FetchContent download (GitHub Actions / clean environments)
+# ─────────────────────────────────────────────────────────────────────────────
+set(JUCE_TAG "7.0.12")
+
+if(DEFINED JUCE_PATH AND EXISTS "${JUCE_PATH}/CMakeLists.txt")
+    message(STATUS "[JUCE] Using override path: ${JUCE_PATH}")
+    add_subdirectory("${JUCE_PATH}" JUCE)
+elseif(EXISTS "C:/JUCE/CMakeLists.txt")
+    message(STATUS "[JUCE] Found at C:/JUCE")
+    add_subdirectory("C:/JUCE" JUCE)
+elseif(EXISTS "C:/dev/JUCE/CMakeLists.txt")
+    message(STATUS "[JUCE] Found at C:/dev/JUCE")
+    add_subdirectory("C:/dev/JUCE" JUCE)
+elseif(EXISTS "C:/Users/user/OneDrive/Desktop/開発/ShoutBuck/JUCE/CMakeLists.txt")
+    message(STATUS "[JUCE] Found at legacy ShoutBuck path")
+    add_subdirectory("C:/Users/user/OneDrive/Desktop/開発/ShoutBuck/JUCE" JUCE)
+else()
+    message(STATUS "[JUCE] No local install found — fetching JUCE ${JUCE_TAG} via FetchContent")
+    include(FetchContent)
+    FetchContent_Declare(
+        JUCE
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG        ${JUCE_TAG}
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(JUCE)
+endif()
 
 juce_add_plugin(CallOut
     COMPANY_NAME                "Naughty"
@@ -41,6 +71,11 @@ target_compile_definitions(CallOut
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
+
+# /utf-8: MSVC が日本語コメントを SJIS と誤認するのを防ぐ (docs/08 trust=1.0)
+if(MSVC)
+    target_compile_options(CallOut PRIVATE /utf-8)
+endif()
 
 target_link_libraries(CallOut
     PRIVATE

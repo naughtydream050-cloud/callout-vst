@@ -23,11 +23,17 @@ Set-Location $repo
 
 git remote set-url origin $remote
 
-# docs/ と scripts/ を両方 add（新規ファイルをすべて含む）
+# docs/ scripts/ .github/ CMakeLists.txt Source/ を add
 git add docs/
 git add scripts/
+git add .github/
+git add CMakeLists.txt
+git add Source/KnobLookAndFeel.h
+git add Source/KnobLookAndFeel.cpp
+git add .gitignore
+git add insta_base_sync.py
 
-$commitMsg = "Update: harness docs and gemma_bridge v2.0 [$(Get-Date -Format 'yyyy-MM-dd HH:mm')]"
+$commitMsg = "feat: killstreet insta_base_sync.py 移植 + post.yml (毎週日曜22JST) [$(Get-Date -Format 'yyyy-MM-dd HH:mm')]"
 git commit -m $commitMsg
 git push origin main
 
@@ -36,12 +42,17 @@ git remote set-url origin "https://github.com/naughtydream050-cloud/callout-vst.
 
 Write-Host ""
 Write-Host "=== Done! ===" -ForegroundColor Green
-Write-Host "Docs:    https://github.com/naughtydream050-cloud/callout-vst/tree/main/docs"    -ForegroundColor Cyan
-Write-Host "Scripts: https://github.com/naughtydream050-cloud/callout-vst/tree/main/scripts" -ForegroundColor Cyan
+Write-Host "Docs:    https://github.com/naughtydream050-cloud/callout-vst/tree/main/docs"      -ForegroundColor Cyan
+Write-Host "Scripts: https://github.com/naughtydream050-cloud/callout-vst/tree/main/scripts"   -ForegroundColor Cyan
+Write-Host "Actions: https://github.com/naughtydream050-cloud/callout-vst/actions"             -ForegroundColor Cyan
 Write-Host ""
 Write-Host "--- 今日の成果 ---" -ForegroundColor Yellow
-Write-Host "docs/08_memory_log.md              ECC永続メモリ＆信頼度スコア体系"       -ForegroundColor White
-Write-Host "docs/09_self_evaluation_harness.md OpenHarness採点基準（9点合格制）"      -ForegroundColor White
-Write-Host "docs/10_safety_guardrails.md       設定弱体化禁止令＆監視ルール"          -ForegroundColor White
-Write-Host "docs/11_browser_context.md         Browser Use受け入れ口（仮設）"        -ForegroundColor White
-Write-Host "scripts/gemma_bridge.py v2.0       eval/doc/compress/browserモード追加"  -ForegroundColor White
+Write-Host ".github/workflows/build.yml        GitHub Actions CI (Windows VST3)"        -ForegroundColor White
+Write-Host ".github/workflows/insta_sync.yml   BASE×Instagram 30分同期ワークフロー"     -ForegroundColor White
+Write-Host "scripts/insta_base_sync.py         同期スクリプト＆Dead-End Detection"      -ForegroundColor White
+Write-Host "scripts/check_token_health.py      Token Health Dashboard"                  -ForegroundColor White
+Write-Host "docs/12_post_mortem_report.md      10件の失敗ログ分析＆防御設計"            -ForegroundColor White
+Write-Host "docs/13_architecture_proposal.md   2026年API現状調査＋推奨アーキ"           -ForegroundColor White
+Write-Host "docs/14_api_minefield_map.md       API地雷原マップ＋Self-Healingプロトコル" -ForegroundColor White
+Write-Host "CMakeLists.txt                     FetchContent JUCE fallback追加"          -ForegroundColor White
+Write-Host "Source/KnobLookAndFeel v2.0        Cold-Rolled Steel (V-Groove+amber)"     -ForegroundColor White

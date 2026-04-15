@@ -112,6 +112,22 @@ docs/08 の当該エントリを「昇格済み」にマーク
 
 ---
 
+### [2026-04-15] KnobLookAndFeel v2.0 — 画像未使用バグ
+- **スコア**: 0.9 / 1.0
+- **カテゴリ**: UI
+- **状況**: v2.0でフルプロシージャル実装に切り替えた際、knobImageをコンストラクタでロードするがdrawRotarySlider内で一切使用しなかった
+- **教訓**: drawRotarySlider内でknobImage.isValid()→描画のパスを確認せよ。コンストラクタのロードだけでは描画されない
+- **昇格先**: docs/02 よくある失敗表（追記候補）
+
+### [2026-04-15] コードセッション — 日本語パスでBashがハング（git push）
+- **スコア**: 0.8 / 1.0
+- **カテゴリ**: Workflow / Git
+- **状況**: `C:\Users\user\OneDrive\Desktop\開発\CallOut` cwdのコードセッションで git push がデッドロック
+- **教訓**: 日本語パスcwdではgit操作がハングする。回避策: Coworkでファイル編集→push_to_github.ps1をユーザーが手動実行、またはC:\dev\CallOutに移動
+- **昇格先**: docs/04_agent_workflow.md（昇格確定）
+
+---
+
 ## 廃棄済み知見（参照禁止）
 
 > 反証が確認された知見を記録。誤った情報の再利用を防ぐ。

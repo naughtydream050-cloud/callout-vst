@@ -1,0 +1,135 @@
+# BASE × Instagram 自動同期ワークフロー
+#
+# 実行タイミング:
+#   - 毎週日曜日 22:00 JST（= 13:00 UTC）
+#   - Actions タブから手動実行（「Run workflow」ボタン）
+#
+# docs/10 Safety Guardrails 準拠:
+#   - continue-on-error は使用しない
+#   - set -e の抑制は行わない
+#   - 全認証情報は GitHub Secrets から取得（ハードコード禁止）
+#
+# 必要な GitHub Secrets:
+#   INSTAGRAM_TOKEN, IG_USER_ID, BASE_ACCESS_TOKEN, BASE_SHOP_ID,
+#   META_APP_ID, META_APP_SECRET
+#   DISCORD_WEBHOOK_URL  (オプション: Discord エラー通知用)
+
+name: BASE × Instagram Sync
+
+on:
+  schedule:
+    - cron: '0 13 * * 0'    # 毎週日曜 22:00 JST (= 13:00 UTC)
+  workflow_dispatch:          # 手動実行（Actions タブ → Run workflow ボタン）
+    inputs:
+      dry_run:
+        description: 'Dry run（投稿せず確認のみ）'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  sync:
+    name: Sync BASE products to Instagram
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python セットアップ ────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      # ── 3. 依存パッケージインストール ─────────────────────────────────────────
+      - name: Install dependencies
+        run: pip install requests --quiet
+
+      # ── 4. Token Health Check（先に実行、失効なら即中断）─────────────────────
+      - name: Check token health
+        id: token-check
+        env:
+          INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN }}
+          META_APP_ID:     ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+        run: |
+          python scripts/check_token_health.py
+          echo "Token check exit code: $?"
+        # exit code 2 (WARN) でもワークフローを続行する
+        # exit code 1 (DEAD) / 3 (ENV ERROR) は後続ステップをスキップ
+        continue-on-error: false
+
+      # ── 5. Token 残り日数の通知（警告がある場合）────────────────────────────
+      - name: Annotate if token refresh needed
+        if: failure() && steps.token-check.outcome == 'failure'
+        run: |
+          echo "::error title=TOKEN HEALTH::Instagram トークンが失効しているか、残り15日以内です。GitHub Secrets の INSTAGRAM_TOKEN を更新してください。"
+
+      # ── 6. BASE → Instagram 同期 ─────────────────────────────────────────────
+      - name: Run BASE × Instagram sync
+        id: sync
+        env:
+          INSTAGRAM_TOKEN:   ${{ secrets.INSTAGRAM_TOKEN }}
+          IG_USER_ID:        ${{ secrets.IG_USER_ID }}
+          BASE_ACCESS_TOKEN: ${{ secrets.BASE_ACCESS_TOKEN }}
+          BASE_SHOP_ID:      ${{ secrets.BASE_SHOP_ID }}
+          DRY_RUN:           ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          python scripts/insta_base_sync.py
+
+      # ── 7. 失敗時: Actions アノテーション ────────────────────────────────────
+      - name: Annotate on sync failure
+        if: failure()
+        run: |
+          echo "::error title=SYNC FAILED::BASE × Instagram 同期が失敗しました。docs/08_memory_log.md または Actions ログを確認してください。"
+          echo "::notice::地雷原マップ: docs/14_api_minefield_map.md を参照"
+
+      # ── 8. 失敗時: Discord 通知（DISCORD_WEBHOOK_URL が設定されている場合のみ）──
+      - name: Notify Discord on failure
+        if: failure() && secrets.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TOKEN_STATUS="${{ steps.token-check.outcome }}"
+          SYNC_STATUS="${{ steps.sync.outcome }}"
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+          curl -s -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ BASE×Instagram 同期エラー\",
+                \"color\": 15158332,
+                \"fields\": [
+                  {\"name\": \"実行時刻\",       \"value\": \"${TIMESTAMP}\",    \"inline\": true},
+                  {\"name\": \"Token Check\",    \"value\": \"${TOKEN_STATUS}\", \"inline\": true},
+                  {\"name\": \"Sync Result\",    \"value\": \"${SYNC_STATUS}\",  \"inline\": true},
+                  {\"name\": \"ログを確認\",     \"value\": \"[Actions Run](${RUN_URL})\", \"inline\": false},
+                  {\"name\": \"地雷マップ参照\", \"value\": \"docs/14_api_minefield_map.md\", \"inline\": false}
+                ]
+              }]
+            }"
+
+      # ── 9. 完了サマリー ────────────────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          STATUS_EMOJI="${{ job.status == 'success' && '✅' || '❌' }}"
+          echo "## ${STATUS_EMOJI} BASE × Instagram Sync" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 項目 | 値 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| 実行時刻 | $(date -u '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "| スケジュール | 毎週日曜 22:00 JST |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dry Run | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Token Check | ${{ steps.token-check.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sync Result | ${{ steps.sync.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "エラー時は [docs/14_api_minefield_map.md](../blob/main/docs/14_api_minefield_map.md) を参照。" >> $GITHUB_STEP_SUMMARY
