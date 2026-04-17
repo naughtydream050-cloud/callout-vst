@@ -80,7 +80,7 @@ void CallOutAudioProcessorEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xFF0A1A08));
     g.fillRoundedRectangle (60.0f, 316.0f, 300.0f, 40.0f, 4.0f);
     g.setColour (juce::Colour (0xFF00FF44));
-    g.setFont   (juce::Font (juce::FontOptions().withHeight (18.0f).withStyle ("Bold")));
+    g.setFont   (juce::Font (18.0f, juce::Font::bold));
     g.drawText  ("ODD SPICE", 75, 318, 270, 36, juce::Justification::centred);
 
     // -- Clip LEDs (top-right corner) ----------------------------------------
@@ -91,7 +91,7 @@ void CallOutAudioProcessorEditor::paint (juce::Graphics& g)
 
     // -- Knob labels ---------------------------------------------------------
     g.setColour (juce::Colours::white.withAlpha (0.85f));
-    g.setFont   (juce::Font (juce::FontOptions().withHeight (11.0f)));
+    g.setFont   (juce::Font (11.0f));
     g.drawText  ("DARK MELODY", 48,  285, 160, 20, juce::Justification::centred);
     g.drawText  ("GRIT",        212, 285, 160, 20, juce::Justification::centred);
 
