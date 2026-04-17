@@ -5,16 +5,18 @@
 
 ---
 
-## 現在の状態スナップショット（最終更新: 2026-04-15）
+## 現在の状態スナップショット（最終更新: 2026-04-18）
 
 ### プロジェクト進捗
-- Step 2（ノブ実装）: コード完成。`push_to_github.ps1` 実行でGitHub Actionsビルド開始可能
-- 残タスク: index.lock削除 → push → Actions green確認 → Step 3（DSP）着手
+- Step 3（UI翻訳）: 完了。Actions GREEN ✅ run#24572941481
+- 完了済み: input_design.png → JUCE コード完全翻訳、artifact生成確認
+- 残タスク: Step 4（DSP実装）
 
 ### 直近のアーキテクチャ決定
 - ノブ実装: `knob.png` を `AffineTransform::rotation` で回転（画像ベース、docs/02準拠）
-- バリューアーク: `0xFFFFB800`（アンバー）多層グロー、`rotaryStartAngle` から `currentAngle`
+- バリューアーク: green(0xFF00FF55)→amber(0xFFFFB800)→red(0xFFFF2200) スライダー値ドリブン
 - GitHub Actions CI: Generator省略（CMakeデフォルト）、全pwsh統一
+- UIサイズ: 420×420px、DARK MELODY(128,205)/GRIT(292,205)、LCD "ODD SPICE"、クリップLED x2、SELボタン
 
 ---
 
@@ -31,6 +33,19 @@
 ### [2026-04-15] git index.lock 残存（Trust 0.7）
 - コードセッションのgit pushがハングするとindex.lockが残留する
 - **回避**: `Remove-Item ".git\index.lock" -Force` を push前に自動実行するよう push_to_github.ps1 に組み込むべき
+
+### [2026-04-18] build/ をコミットすると CI CMakeCache パス不一致で失敗（Trust 1.0）
+- ローカルパス（C:/Users/user/OneDrive/…）が CMakeCache.txt に焼き込まれる
+- CI runner (D:/a/…) と不一致 → `Re-run cmake with a different source directory` エラー
+- **修正**: `git rm -r --cached build/` + `.gitignore` に `build/` を追加。二度とコミットするな
+
+### [2026-04-18] PAT ファイルが UTF-16LE（BOM付き）エンコード（Trust 1.0）
+- `cat` / `tr` でトークン抽出するとヌルバイトが混入して認証失敗
+- **修正**: `python -c "open(...,'rb').read().decode('utf-16-le')"` で正しく抽出
+
+### [2026-04-18] juce::FontOptions は JUCE 7.0.12 では使用禁止（Trust 1.0）
+- `juce::Font(juce::FontOptions().withHeight(x).withStyle("Bold"))` はコンパイルできても CI でエラー
+- **必須API**: `juce::Font(14.0f, juce::Font::bold)` / `juce::Font(11.0f)` の古いスタイルを使え
 
 ---
 
