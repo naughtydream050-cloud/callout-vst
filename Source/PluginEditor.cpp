@@ -1,21 +1,16 @@
 #include "PluginEditor.h"
 
 namespace Layout {
-    constexpr int kWidth    = 700;
+    constexpr int kWidth    = 420;
     constexpr int kHeight   = 420;
-    constexpr int kKnobSize = 230;
-    constexpr int kBuckX    = 38;
-    constexpr int kBuckY    = 80;
-    constexpr int kGritX    = 432;
-    constexpr int kGritY    = 80;
-    constexpr int kNLW      = 120;
-    constexpr int kNLH      = 24;
-    constexpr int kNLYOff   = -28;
-    constexpr int kVLW      = 120;
-    constexpr int kVLH      = 22;
-    constexpr int kVLYOff   = 8;
+    constexpr int kKnobSize = 160;
+    constexpr int kBuckX    =  48;   // centre 128 - radius 80
+    constexpr int kBuckY    = 125;   // centre 205 - radius 80
+    constexpr int kGritX    = 212;   // centre 292 - radius 80
+    constexpr int kGritY    = 125;
 }
 
+// ============================================================================
 CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
@@ -26,10 +21,6 @@ CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor&
         if (d && sz > 0)
             backgroundImage = juce::ImageCache::getFromMemory (d, sz);
     }
-
-    const juce::Font bf (juce::FontOptions().withHeight (14.0f).withStyle ("Bold"));
-    const juce::Font nf (juce::FontOptions().withHeight (13.0f));
-    const juce::Colour org (0xFFFF9900), dim (0xFFCC7700);
 
     // Apply KnobLookAndFeel to both sliders
     buckKnob.setLookAndFeel (&knobLAF);
@@ -49,30 +40,12 @@ CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor&
     sk (buckKnob);
     sk (gritKnob);
 
-    // Name label helper
-    auto snl = [&](juce::Label& l, const juce::String& t)
-    {
-        l.setText             (t, juce::dontSendNotification);
-        l.setFont             (bf);
-        l.setColour           (juce::Label::textColourId, org);
-        l.setJustificationType(juce::Justification::centred);
-        l.setInterceptsMouseClicks (false, false);
-        addAndMakeVisible (l);
-    };
-    snl (buckNameLabel, "BUCK");
-    snl (gritNameLabel, "GRIT");
-
-    // Value label helper
-    auto svl = [&](juce::Label& l)
-    {
-        l.setFont             (nf);
-        l.setColour           (juce::Label::textColourId, dim);
-        l.setJustificationType(juce::Justification::centred);
-        l.setInterceptsMouseClicks (false, false);
-        addAndMakeVisible (l);
-    };
-    svl (buckValueLabel);
-    svl (gritValueLabel);
+    // SELECT button
+    addAndMakeVisible (selectButton);
+    selectButton.setColour (juce::TextButton::buttonColourId,   juce::Colour (0xFF333333));
+    selectButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xFF555555));
+    selectButton.setColour (juce::TextButton::textColourOffId,  juce::Colour (0xFF00FF44));
+    selectButton.setColour (juce::TextButton::textColourOnId,   juce::Colour (0xFF00FF44));
 
     // APVTS attachments
     buckAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -81,10 +54,10 @@ CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor&
         audioProcessor.apvts, "grit", gritKnob);
 
     setSize (Layout::kWidth, Layout::kHeight);
-    updateValueLabels();
     startTimerHz (10);
 }
 
+// ============================================================================
 CallOutAudioProcessorEditor::~CallOutAudioProcessorEditor()
 {
     // Must reset before Sliders are destroyed to avoid dangling LAF pointer
@@ -93,41 +66,63 @@ CallOutAudioProcessorEditor::~CallOutAudioProcessorEditor()
     stopTimer();
 }
 
+// ============================================================================
 void CallOutAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xFF1A1A1A));
+    // -- Background ----------------------------------------------------------
+    g.fillAll (juce::Colour (0xFF1A1208));
     if (backgroundImage.isValid())
         g.drawImage (backgroundImage,
                      0, 0, getWidth(), getHeight(),
                      0, 0, backgroundImage.getWidth(), backgroundImage.getHeight(), false);
+
+    // -- LCD area ------------------------------------------------------------
+    g.setColour (juce::Colour (0xFF0A1A08));
+    g.fillRoundedRectangle (60.0f, 316.0f, 300.0f, 40.0f, 4.0f);
+    g.setColour (juce::Colour (0xFF00FF44));
+    g.setFont   (juce::Font (juce::FontOptions().withHeight (18.0f).withStyle ("Bold")));
+    g.drawText  ("ODD SPICE", 75, 318, 270, 36, juce::Justification::centred);
+
+    // -- Clip LEDs (top-right corner) ----------------------------------------
+    const auto clipCol = leftClip ? juce::Colour (0xFFFF2200) : juce::Colour (0xFF330000);
+    g.setColour (clipCol);
+    g.fillEllipse (365.0f, 25.0f, 12.0f, 12.0f);
+    g.fillEllipse (381.0f, 25.0f, 12.0f, 12.0f);
+
+    // -- Knob labels ---------------------------------------------------------
+    g.setColour (juce::Colours::white.withAlpha (0.85f));
+    g.setFont   (juce::Font (juce::FontOptions().withHeight (11.0f)));
+    g.drawText  ("DARK MELODY", 48,  285, 160, 20, juce::Justification::centred);
+    g.drawText  ("GRIT",        212, 285, 160, 20, juce::Justification::centred);
+
+    // -- Mini knob (decorative, lower-right) ---------------------------------
+    {
+        constexpr float mx = 390.0f, my = 345.0f, mr = 12.0f;
+        g.setColour (juce::Colour (0xFF222222));
+        g.fillEllipse (mx - mr, my - mr, mr * 2.0f, mr * 2.0f);
+        g.setColour (juce::Colour (0xFF444444));
+        g.drawEllipse (mx - mr, my - mr, mr * 2.0f, mr * 2.0f, 1.5f);
+        // 12-o'clock indicator dot
+        g.setColour (juce::Colour (0xFFFFAA30));
+        g.fillEllipse (mx - 1.5f, my - mr * 0.72f - 1.5f, 3.0f, 3.0f);
+    }
 }
 
+// ============================================================================
 void CallOutAudioProcessorEditor::resized()
 {
     using namespace Layout;
     buckKnob.setBounds (kBuckX, kBuckY, kKnobSize, kKnobSize);
     gritKnob.setBounds (kGritX, kGritY, kKnobSize, kKnobSize);
 
-    const int bCX = kBuckX + kKnobSize / 2;
-    const int gCX = kGritX + kKnobSize / 2;
-
-    buckNameLabel .setBounds (bCX - kNLW / 2, kBuckY + kNLYOff,             kNLW, kNLH);
-    gritNameLabel .setBounds (gCX - kNLW / 2, kGritY + kNLYOff,             kNLW, kNLH);
-    buckValueLabel.setBounds (bCX - kVLW / 2, kBuckY + kKnobSize + kVLYOff, kVLW, kVLH);
-    gritValueLabel.setBounds (gCX - kVLW / 2, kGritY + kKnobSize + kVLYOff, kVLW, kVLH);
+    selectButton.setBounds (20, 316, 38, 38);
 }
 
+// ============================================================================
 void CallOutAudioProcessorEditor::timerCallback()
 {
-    updateValueLabels();
-}
-
-void CallOutAudioProcessorEditor::updateValueLabels()
-{
-    auto fmt = [](const juce::Slider& s)
-    {
-        return "~" + juce::String (juce::roundToInt (s.getValue() * 100.0)) + "%";
-    };
-    buckValueLabel.setText (fmt (buckKnob), juce::dontSendNotification);
-    gritValueLabel.setText (fmt (gritKnob), juce::dontSendNotification);
+    // Refresh clip LED state (reads peak from processor in future iterations)
+    leftClip  = false;
+    rightClip = false;
+    repaint();
 }

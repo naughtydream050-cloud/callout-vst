@@ -5,12 +5,11 @@
  * CALLOUT Plugin – KnobLookAndFeel
  *
  * Rotary knob renderer:
- *   Layer 1: Amber value arc (glow ring)
+ *   Layer 1: LED value arc — green (low) → amber (mid) → red (high)
+ *            3-layer glow effect
  *   Layer 2: knob.png image rotated via AffineTransform::rotation
  *            Fallback: plain dark circle when image is unavailable
  *   Layer 3: Amber indicator dot with glow halos
- *
- * Spec: docs/02_knob_implementation_skill.md
  */
 class KnobLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -28,9 +27,11 @@ public:
 private:
     juce::Image knobImage;   // loaded once from BinaryData in constructor
 
+    // sliderPos drives the colour gradient: 0→green, 0.5→amber, 1.0→red
     void drawValueArc     (juce::Graphics& g, float cx, float cy,
                            float arcRadius, float arcThickness,
-                           float startAngle, float currentAngle) const;
+                           float startAngle, float currentAngle,
+                           float sliderPos) const;
 
     void drawIndicatorDot (juce::Graphics& g, float cx, float cy,
                            float knobRadius, float angle) const;

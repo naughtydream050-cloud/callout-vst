@@ -30,10 +30,10 @@ void KnobLookAndFeel::drawRotarySlider (
     const float knobRadius = juce::jmin (width, height) * 0.5f * 0.90f;
 
     // ------------------------------------------------------------------
-    // Layer 1: Value arc (amber glow behind knob body)
+    // Layer 1: Value arc (LED colour: green → amber → red)
     // ------------------------------------------------------------------
     drawValueArc (g, cx, cy, radius * 0.90f, radius * 0.10f,
-                  rotaryStartAngle, angle);
+                  rotaryStartAngle, angle, sliderPos);
 
     // ------------------------------------------------------------------
     // Layer 2: Knob body
@@ -64,13 +64,14 @@ void KnobLookAndFeel::drawRotarySlider (
 }
 
 // ============================================================================
-//  drawValueArc  — amber glow ring
+//  drawValueArc  — LED ring with green → amber → red colour gradient
 // ============================================================================
 void KnobLookAndFeel::drawValueArc (
         juce::Graphics& g,
         float cx, float cy,
         float arcRadius, float arcThickness,
-        float startAngle, float currentAngle) const
+        float startAngle, float currentAngle,
+        float sliderPos) const
 {
     // Dark background track (full sweep)
     {
@@ -88,25 +89,41 @@ void KnobLookAndFeel::drawValueArc (
     if (currentAngle <= startAngle + 0.001f)
         return;
 
+    // Compute LED colour based on slider position:
+    //   0.0 → green  (0xFF00FF55)
+    //   0.5 → amber  (0xFFFFB800)
+    //   1.0 → red    (0xFFFF2200)
+    const juce::Colour green (0xFF00FF55);
+    const juce::Colour amber (0xFFFFB800);
+    const juce::Colour red   (0xFFFF2200);
+
+    juce::Colour ledColour;
+    if (sliderPos <= 0.5f)
+        ledColour = green.interpolatedWith (amber, sliderPos * 2.0f);
+    else
+        ledColour = amber.interpolatedWith (red,   (sliderPos - 0.5f) * 2.0f);
+
     // Glow layers (outermost to innermost)
-    for (float wm : { 3.5f, 2.2f, 1.4f })
+    const float glowMults[] = { 3.5f, 2.2f, 1.4f };
+    const float alphas[]    = { 0.06f, 0.14f, 0.30f };
+
+    for (int i = 0; i < 3; ++i)
     {
-        const float alpha = (wm > 3.0f) ? 0.06f : (wm > 2.0f) ? 0.14f : 0.30f;
         juce::Path p;
         p.addCentredArc (cx, cy, arcRadius, arcRadius,
                          0.0f, startAngle, currentAngle, true);
-        g.setColour (juce::Colour (0xFFFFB800).withAlpha (alpha));
-        g.strokePath (p, juce::PathStrokeType (arcThickness * wm,
+        g.setColour (ledColour.withAlpha (alphas[i]));
+        g.strokePath (p, juce::PathStrokeType (arcThickness * glowMults[i],
                       juce::PathStrokeType::curved,
                       juce::PathStrokeType::rounded));
     }
 
-    // Solid amber arc on top
+    // Solid arc on top
     {
         juce::Path solid;
         solid.addCentredArc (cx, cy, arcRadius, arcRadius,
                              0.0f, startAngle, currentAngle, true);
-        g.setColour (juce::Colour (0xFFFFB800));
+        g.setColour (ledColour);
         g.strokePath (solid, juce::PathStrokeType (arcThickness * 0.55f,
                       juce::PathStrokeType::curved,
                       juce::PathStrokeType::rounded));

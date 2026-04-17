@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "KnobLookAndFeel.h"   // ← 新しいカスタムノブ
+#include "KnobLookAndFeel.h"
 
 class CallOutAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
@@ -14,18 +14,21 @@ public:
     void timerCallback () override;
 
 private:
-    void updateValueLabels();
-
     CallOutAudioProcessor& audioProcessor;
     juce::Image backgroundImage;
 
-    // LookAndFeel は Slider より前に宣言（破棄順序の保証）
+    // LookAndFeel must be declared before Sliders (destruction order)
     KnobLookAndFeel knobLAF;
 
     juce::Slider buckKnob { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
     juce::Slider gritKnob { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
 
-    juce::Label buckNameLabel, gritNameLabel, buckValueLabel, gritValueLabel;
+    // [10] LCD + SELECT button
+    juce::TextButton selectButton { "SEL" };
+
+    // [11] Clip LED state
+    bool leftClip  = false;
+    bool rightClip = false;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> buckAttachment, gritAttachment;
 
