@@ -27,8 +27,8 @@ CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor&
             backgroundImage = juce::ImageCache::getFromMemory (d, sz);
     }
 
-    const juce::Font bf (juce::FontOptions().withHeight (14.0f).withStyle ("Bold"));
-    const juce::Font nf (juce::FontOptions().withHeight (13.0f));
+    const juce::Font bf (14.0f, juce::Font::bold);
+    const juce::Font nf (13.0f);
     const juce::Colour org (0xFFFF9900), dim (0xFFCC7700);
 
     // Apply KnobLookAndFeel to both sliders
