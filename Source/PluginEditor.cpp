@@ -80,6 +80,24 @@ CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor&
     gritAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "grit", gritKnob);
 
+    // SELECTボタン
+    addAndMakeVisible(selectButton);
+    selectButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF2A2A2A));
+    selectButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF888888));
+    selectButton.onClick = [this]
+    {
+        audioProcessor.selectNextPreset();
+        int idx = audioProcessor.currentPreset;
+        static const char* names[] = { "ODD SPICE", "DARK SOUL", "GRIT GRIND", "CLEAN PUSH" };
+        currentPresetName = names[idx % 4];
+        audioProcessor.resetClipLEDs();
+        repaint();
+    };
+
+    // クリップLEDポーリング（60ms = ~17fps）
+    clipPollTimer = std::make_unique<ClipTimer>(*this);
+    clipPollTimer->startTimer(60);
+
     setSize (Layout::kWidth, Layout::kHeight);
     updateValueLabels();
     startTimerHz (10);
@@ -87,6 +105,7 @@ CallOutAudioProcessorEditor::CallOutAudioProcessorEditor (CallOutAudioProcessor&
 
 CallOutAudioProcessorEditor::~CallOutAudioProcessorEditor()
 {
+    clipPollTimer->stopTimer();
     // Must reset before Sliders are destroyed to avoid dangling LAF pointer
     buckKnob.setLookAndFeel (nullptr);
     gritKnob.setLookAndFeel (nullptr);
@@ -100,6 +119,37 @@ void CallOutAudioProcessorEditor::paint (juce::Graphics& g)
         g.drawImage (backgroundImage,
                      0, 0, getWidth(), getHeight(),
                      0, 0, backgroundImage.getWidth(), backgroundImage.getHeight(), false);
+
+    // LCD background
+    g.setColour(juce::Colour(0xFF0A1A08));
+    g.fillRoundedRectangle(60.0f, 316.0f, 300.0f, 40.0f, 4.0f);
+    // LCD border
+    g.setColour(juce::Colour(0xFF1A3A18));
+    g.drawRoundedRectangle(60.0f, 316.0f, 300.0f, 40.0f, 4.0f, 1.0f);
+    // Preset name
+    g.setColour(juce::Colour(0xFF00FF44));
+    g.setFont(juce::Font("Courier New", 18.0f, juce::Font::bold));
+    g.drawText(currentPresetName, 75, 318, 270, 36, juce::Justification::centred);
+
+    // Clip LEDs（右上、repaint毎に更新）
+    bool lc = audioProcessor.isLeftClipping();
+    bool rc = audioProcessor.isRightClipping();
+    // Left channel LED
+    g.setColour(lc ? juce::Colour(0xFFFF2200) : juce::Colour(0xFF330000));
+    g.fillEllipse(365.0f, 25.0f, 12.0f, 12.0f);
+    g.setColour(lc ? juce::Colour(0x44FF2200) : juce::Colours::transparentBlack);
+    g.fillEllipse(362.0f, 22.0f, 18.0f, 18.0f);  // glow
+    // Right channel LED
+    g.setColour(rc ? juce::Colour(0xFFFF2200) : juce::Colour(0xFF330000));
+    g.fillEllipse(381.0f, 25.0f, 12.0f, 12.0f);
+    g.setColour(rc ? juce::Colour(0x44FF2200) : juce::Colours::transparentBlack);
+    g.fillEllipse(378.0f, 22.0f, 18.0f, 18.0f);
+
+    // ノブラベル
+    g.setColour(juce::Colours::white.withAlpha(0.7f));
+    g.setFont(juce::Font("Arial", 11.0f, juce::Font::plain));
+    g.drawText("DARK MELODY", 48, 285, 160, 20, juce::Justification::centred);
+    g.drawText("GRIT",        212, 285, 160, 20, juce::Justification::centred);
 }
 
 void CallOutAudioProcessorEditor::resized()
@@ -115,6 +165,8 @@ void CallOutAudioProcessorEditor::resized()
     gritNameLabel .setBounds (gCX - kNLW / 2, kGritY + kNLYOff,             kNLW, kNLH);
     buckValueLabel.setBounds (bCX - kVLW / 2, kBuckY + kKnobSize + kVLYOff, kVLW, kVLH);
     gritValueLabel.setBounds (gCX - kVLW / 2, kGritY + kKnobSize + kVLYOff, kVLW, kVLH);
+
+    selectButton.setBounds(20, 316, 38, 38);
 }
 
 void CallOutAudioProcessorEditor::timerCallback()

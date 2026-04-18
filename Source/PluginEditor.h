@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "KnobLookAndFeel.h"   // ← 新しいカスタムノブ
+#include "KnobLookAndFeel.h"
 
 class CallOutAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
@@ -28,6 +28,17 @@ private:
     juce::Label buckNameLabel, gritNameLabel, buckValueLabel, gritValueLabel;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> buckAttachment, gritAttachment;
+
+    // [10] Preset / clip
+    juce::String currentPresetName { "ODD SPICE" };
+    juce::TextButton selectButton { "SELECT" };
+
+    struct ClipTimer : juce::Timer {
+        CallOutAudioProcessorEditor& owner;
+        explicit ClipTimer(CallOutAudioProcessorEditor& o) : owner(o) {}
+        void timerCallback() override { owner.repaint(); }
+    };
+    std::unique_ptr<ClipTimer> clipPollTimer;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CallOutAudioProcessorEditor)
 };
